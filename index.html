@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#f97316">
+    <meta name="description" content="JoinUs - Nachhaltige und kosteneffiziente Fahrgemeinschafts-Plattform. Finde Fahrten oder biete selbst welche an.">
+    <meta name="keywords" content="Fahrgemeinschaft, Carpooling, Mitfahrgelegenheit, nachhaltig, günstig, JoinUs">
+    <meta name="author" content="JoinUs Team">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="JoinUs">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="JoinUs - Fahrgemeinschafts-Plattform">
+    <meta property="og:description" content="Nachhaltige und kosteneffiziente Mobilität für alle">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/og-image.png">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <title>JoinUs - Nachhaltige Fahrgemeinschaften</title>
+    
+    <style>
+        /* Loading Screen */
+        #app-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease-out;
+        }
+        
+        #app-loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-logo {
+            font-size: 4rem;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 20px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .loading-text {
+            color: white;
+            font-size: 1.5rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-top: 20px;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Install Banner */
+        .install-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        .install-banner.show {
+            display: block;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .install-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .install-banner-icon {
+            font-size: 2rem;
+        }
+        
+        .install-banner-text {
+            flex: 1;
+        }
+        
+        .install-banner-title {
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+        
+        .install-banner-desc {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        .install-btn {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .close-install {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="app-loading">
+        <div class="loading-logo">🚗 JoinUs</div>
+        <div class="loading-text">Wird geladen...</div>
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Install Banner -->
+    <div class="install-banner" id="installBanner">
+        <button class="close-install" id="closeInstall">&times;</button>
+        <div class="install-banner-content">
+            <div class="install-banner-icon">📱</div>
+            <div class="install-banner-text">
+                <div class="install-banner-title">JoinUs App installieren</div>
+                <div class="install-banner-desc">Füge JoinUs zu deinem Homescreen hinzu für schnellen Zugriff</div>
+            </div>
+            <button class="install-btn" id="installBtn">Installieren</button>
+        </div>
+    </div>
+    
+    <!-- React App Root -->
+    <div id="root"></div>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        // Hide loading screen when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loading = document.getElementById('app-loading');
+                loading.classList.add('hidden');
+                setTimeout(() => loading.remove(), 300);
+            }, 500);
+        });
+        
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker registered:', registration);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New service worker available
+                                    if (confirm('Neue Version verfügbar! Jetzt aktualisieren?')) {
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.log('❌ Service Worker registration failed:', error);
+                    });
+            });
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        const installBanner = document.getElementById('installBanner');
+        const installBtn = document.getElementById('installBtn');
+        const closeInstall = document.getElementById('closeInstall');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Show install banner
+            setTimeout(() => {
+                installBanner.classList.add('show');
+            }, 3000); // Show after 3 seconds
+        });
+        
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                return;
+            }
+            // Show the install prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response: ${outcome}`);
+            // Clear the deferredPrompt
+            deferredPrompt = null;
+            // Hide banner
+            installBanner.classList.remove('show');
+        });
+        
+        closeInstall.addEventListener('click', () => {
+            installBanner.classList.remove('show');
+            // Don't show again this session
+            sessionStorage.setItem('installBannerDismissed', 'true');
+        });
+        
+        // Check if already dismissed this session
+        if (sessionStorage.getItem('installBannerDismissed')) {
+            installBanner.style.display = 'none';
+        }
+        
+        // Log when app is installed
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ JoinUs App installed successfully!');
+            installBanner.classList.remove('show');
+        });
+        
+        // Handle online/offline events
+        window.addEventListener('online', () => {
+            console.log('✅ Back online');
+            // You could show a toast notification here
+        });
+        
+        window.addEventListener('offline', () => {
+            console.log('⚠️ You are offline');
+            // You could show a toast notification here
+        });
+        
+        // Performance monitoring
+        window.addEventListener('load', () => {
+            if ('performance' in window) {
+                const perfData = window.performance.timing;
+                const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
+                console.log(`📊 Page load time: ${pageLoadTime}ms`);
+            }
+        });
+        
+        // Check for URL parameters (for shortcuts)
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+        if (action) {
+            console.log(`🔗 Deep link action: ${action}`);
+            // You can handle this in your React app
+            sessionStorage.setItem('initialAction', action);
+        }
+    </script>
+    
+    <!-- React App will be injected here by the build process -->
+    <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
